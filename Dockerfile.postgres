@@ -1,0 +1,8 @@
+# Optional: If you don't need any customization, skip this
+FROM postgres:15.8-alpine3.20
+
+COPY ./scripts/init/createdb.sql /docker-entrypoint-initdb.d/01_createdb.sql
+COPY ./scripts/DDL/initiation.sql /docker-entrypoint-initdb.d/02_initiation.sql
+COPY ./scripts/DML/parameter/parameter_initiation.sql /docker-entrypoint-initdb.d/03_parameter_initiation.sql
+COPY ./scripts/DML/sensitivePattern/sensitivedatapattern_init.sql /docker-entrypoint-initdb.d/04_sensitivedatapattern_init.sql
+COPY ./scripts/DML/mask/mask_init.sql /docker-entrypoint-initdb.d/05_mask_init.sql

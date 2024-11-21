@@ -1,0 +1,192 @@
+services:
+  postgresql:
+    container_name: datafocus-postgresql
+    image: kafein/datafocus-postgresql:1.1.0
+    restart: always
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: uguV3SLiUH
+    ports: 
+      - "5432:5432"
+    networks:
+      - datafocus-network
+    volumes:
+     - ./postgresql/data:/var/lib/postgresql/data
+    healthcheck:
+      test: psql -U appuser -tAc 'select 1' -d datafocus
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+
+  keycloak:
+    container_name: datafocus-keycloak
+    image: kafein/datafocus-keycloak:1.1.0
+    restart: always
+    command: start-dev
+    ports:
+      - "8085:8080"
+    networks:
+      - datafocus-network
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin-demo}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-demo}
+      KC_DB: postgres
+      KC_DB_URL: ${KC_DB_URL:-jdbc:postgresql://postgresql:5432/keycloak}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-appuser}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-uguV3SLiUH}
+      KC_HTTP_RELATIVE_PATH: auth
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+    depends_on:
+      - postgresql
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+
+  router:
+    container_name: datafocus-router
+    image: kafein/datafocus-router:1.1.0
+    restart: always
+    ports:
+     - "0.0.0.0:80:80"
+     - "0.0.0.0:443:443"
+    volumes:
+      - ./router/:/etc/nginx/conf.d/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - datafocus-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+
+  frontend:
+    container_name: datafocus-frontend
+    image: kafein/datafocus-frontend:1.1.0
+    restart: always
+    ports:
+      - "0.0.0.0:5000:80"
+    environment:
+      LOGIN_PAGE_NAME: DataFocus-FE
+      API_BASE_URL: http://192.168.185.42/api/datafocus-service
+      KEYCLOAK_URL: http://192.168.185.42/auth
+      KEYCLOAK_REALM: datafocus
+      KEYCLOAK_CLIENT_ID: datafocusId
+      HEADER_LOGO: /datafocus-header-logo.png
+      LOGIN_PAGE_LOGO: /datafocus-login-logo.png
+      LOGO_URL: /
+    networks:
+      - datafocus-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on: 
+      - router
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+
+  backend:
+    container_name: datafocus-backend
+    image: kafein/datafocus-backend:1.1.0
+    restart: always
+    ports:
+      - "0.0.0.0:8082:8082" #application
+    environment:
+      ACTIVE_PROFILE: ${ACTIVE_PROFILE:-production}
+      DF_SERVER_PORT: ${DF_SERVER_PORT:-8082}
+      DF_TLS_ENABLED: ${DF_TLS_ENABLED:-false}
+      DF_LOG_PATH_NAME: ${DF_LOG_PATH_NAME:app/logs/datafocus.log}
+      DF_DATABASE_URL: ${DF_DATABASE_URL:-jdbc:postgresql://postgresql:5432/datafocus}
+      DF_DATABASE_USERNAME: ${DF_DATABASE_USERNAME:-appuser}
+      DF_DATABASE_PASSWORD: ${DF_DATABASE_PASSWORD:-uguV3SLiUH}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak}
+      KEYCLOAK_USERNAME: ${KEYCLOAK_USERNAME:-admin-demo}
+      KEYCLOAK_PASS: ${KEYCLOAK_PASS:-admin-demo}
+      KEYCLOAK_REALM:  ${KEYCLOAK_REALM:-datafocus}
+      KAFKA_SERVER: ${KAFKA_SERVER:-kafka:9092}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+    networks:
+      - datafocus-network
+    depends_on:
+      - postgresql
+      - kafka
+      - router
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kafka:
+    image: kafein/kafka:3.7.0
+    container_name: datafocus-kafka
+    restart: always
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:9094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://34.116.133.172:9094 #IF YOU NEED TO REACH KAFKA FROM EXTERNAL, CHANGE IP AT EXTERNAL LISTENER.
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 1
+    ports:
+      - "9094:9094"
+    networks:
+      - datafocus-network
+    depends_on:
+      - keycloak
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+
+  minio:
+    container_name: datafocus-minio
+    image: kafein/minio:2024.6.29
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:admin-demo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:admin-demo}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_DEFAULT_BUCKETS:-data-focus}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - datafocus-network
+    depends_on:
+      - keycloak
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"
+
+networks:
+  datafocus-network:
+    name: datafocus-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.0/27
