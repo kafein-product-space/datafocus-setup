@@ -1,6 +1,5 @@
-FROM quay.io/keycloak/keycloak:23.0.0
+FROM quay.io/keycloak/keycloak:25.0.4
 
-COPY keycloak/custom-theme/mytheme /opt/keycloak/themes/mytheme
-COPY keycloak/custom-theme/template.ftl /opt/keycloak/themes/mytheme/login/template.ftl
+COPY keycloak/custom-theme/org.keycloak.keycloak-themes-25.0.4.jar /opt/keycloak/lib/lib/main/org.keycloak.keycloak-themes-25.0.4.jar
 
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
