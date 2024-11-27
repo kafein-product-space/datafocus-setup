@@ -1,7 +1,7 @@
 services:
   postgresql:
     container_name: datafocus-postgresql
-    image: kafein/datafocus-postgresql:1.1.0
+    image: kafein/datafocus-postgresql:1.2.0
     restart: always
     environment:
       POSTGRES_USER: appuser
@@ -24,7 +24,7 @@ services:
 
   keycloak:
     container_name: datafocus-keycloak
-    image: kafein/datafocus-keycloak:1.1.0
+    image: kafein/datafocus-keycloak:1.2.0
     restart: always
     command: start-dev
     ports:
@@ -51,7 +51,7 @@ services:
 
   router:
     container_name: datafocus-router
-    image: kafein/datafocus-router:1.1.0
+    image: kafein/datafocus-router:1.2.0
     restart: always
     ports:
      - "0.0.0.0:80:80"
@@ -72,7 +72,7 @@ services:
 
   frontend:
     container_name: datafocus-frontend
-    image: kafein/datafocus-frontend:1.1.0
+    image: kafein/datafocus-frontend:1.2.0
     restart: always
     ports:
       - "0.0.0.0:5000:80"
@@ -101,7 +101,7 @@ services:
 
   backend:
     container_name: datafocus-backend
-    image: kafein/datafocus-backend:1.1.0
+    image: kafein/datafocus-backend:1.2.0
     restart: always
     ports:
       - "0.0.0.0:8082:8082" #application
@@ -114,8 +114,8 @@ services:
       DF_DATABASE_USERNAME: ${DF_DATABASE_USERNAME:-appuser}
       DF_DATABASE_PASSWORD: ${DF_DATABASE_PASSWORD:-uguV3SLiUH}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak}
-      KEYCLOAK_USERNAME: ${KEYCLOAK_USERNAME:-admin-demo}
-      KEYCLOAK_PASS: ${KEYCLOAK_PASS:-admin-demo}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-datafocusapp}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-uEe08dJpLJGmzmZ7KkKGsW3TWrDUXzGS}
       KEYCLOAK_REALM:  ${KEYCLOAK_REALM:-datafocus}
       KAFKA_SERVER: ${KAFKA_SERVER:-kafka:9092}
     logging:
