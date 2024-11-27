@@ -1,2 +1,4 @@
 # Optional: If you don't need any customization, skip this
 FROM postgres:15.8-alpine3.20
+
+COPY ./scripts/init/createdb.sql /docker-entrypoint-initdb.d/01_createdb.sql
