@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: uguV3SLiUH
-    ports: 
+    ports:
       - "5432:5432"
     networks:
       - datafocus-network
@@ -26,11 +26,13 @@ services:
     container_name: datafocus-keycloak
     image: kafein/datafocus-keycloak:1.2.0
     restart: always
-    command: start-dev
+    command: start-dev --import-realm --override true
     ports:
       - "8085:8080"
     networks:
       - datafocus-network
+    volumes:
+      - ./keycloak/datafocus-realm.json:/opt/keycloak/data/import/
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin-demo}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-demo}
@@ -78,8 +80,8 @@ services:
       - "0.0.0.0:5000:80"
     environment:
       LOGIN_PAGE_NAME: DataFocus-FE
-      API_BASE_URL: http://192.168.185.42/api/datafocus-service
-      KEYCLOAK_URL: http://192.168.185.42/auth
+      API_BASE_URL: http://192.168.185.48/api/datafocus-service
+      KEYCLOAK_URL: http://192.168.185.48/auth
       KEYCLOAK_REALM: datafocus
       KEYCLOAK_CLIENT_ID: datafocusId
       HEADER_LOGO: /datafocus-header-logo.png
@@ -92,7 +94,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    depends_on: 
+    depends_on:
       - router
     logging:
       driver: "json-file"
@@ -109,11 +111,11 @@ services:
       ACTIVE_PROFILE: ${ACTIVE_PROFILE:-production}
       DF_SERVER_PORT: ${DF_SERVER_PORT:-8082}
       DF_TLS_ENABLED: ${DF_TLS_ENABLED:-false}
-      DF_LOG_PATH_NAME: ${DF_LOG_PATH_NAME:app/logs/datafocus.log}
+      DF_LOG_PATH_NAME: ${DF_LOG_PATH_NAME:-/app/logs/datafocus.log}
       DF_DATABASE_URL: ${DF_DATABASE_URL:-jdbc:postgresql://postgresql:5432/datafocus}
       DF_DATABASE_USERNAME: ${DF_DATABASE_USERNAME:-appuser}
       DF_DATABASE_PASSWORD: ${DF_DATABASE_PASSWORD:-uguV3SLiUH}
-      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://192.168.185.48/auth}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-datafocusapp}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-uEe08dJpLJGmzmZ7KkKGsW3TWrDUXzGS}
       KEYCLOAK_REALM:  ${KEYCLOAK_REALM:-datafocus}
@@ -132,7 +134,7 @@ services:
       - kafka
       - router
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8082 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/api/datafocus-service/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -165,18 +167,22 @@ services:
       driver: "json-file"
       options:
         max-size: "2048m"
+    healthcheck:
+      test: echo 'OK' | /opt/kafka/bin/kafka-console-producer.sh --broker-list kafka:9092 --topic health-check-topic || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   minio:
     container_name: datafocus-minio
     image: kafein/minio:2024.6.29
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:uguV3SLiUH}
-      MINIO_DEFAULT_BUCKETS: ${MINIO_DEFAULT_BUCKETS:-data-focus}
-      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-uguV3SLiUH}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-http://192.168.185.48/minio/}
+    command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
-      - "9001:9001"
     networks:
       - datafocus-network
     depends_on:
