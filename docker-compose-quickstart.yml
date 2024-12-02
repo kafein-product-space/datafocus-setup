@@ -26,13 +26,11 @@ services:
     container_name: datafocus-keycloak
     image: kafein/datafocus-keycloak:1.2.0
     restart: always
-    command: start-dev --import-realm --override true
-    ports:
-      - "8085:8080"
+    command: start-dev --import-realm
     networks:
       - datafocus-network
     volumes:
-      - ./keycloak/datafocus-realm.json:/opt/keycloak/data/import/
+      - ./keycloak/datafocus-realm.json:/opt/keycloak/data/import/datafocus-realm.json
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin-demo}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-demo}
@@ -76,8 +74,6 @@ services:
     container_name: datafocus-frontend
     image: kafein/datafocus-frontend:1.2.0
     restart: always
-    ports:
-      - "0.0.0.0:5000:80"
     environment:
       LOGIN_PAGE_NAME: DataFocus-FE
       API_BASE_URL: http://192.168.185.48/api/datafocus-service
@@ -105,8 +101,6 @@ services:
     container_name: datafocus-backend
     image: kafein/datafocus-backend:1.2.0
     restart: always
-    ports:
-      - "0.0.0.0:8082:8082" #application
     environment:
       ACTIVE_PROFILE: ${ACTIVE_PROFILE:-production}
       DF_SERVER_PORT: ${DF_SERVER_PORT:-8082}
@@ -181,8 +175,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-uguV3SLiUH}
       MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-http://192.168.185.48/minio/}
     command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
     networks:
       - datafocus-network
     depends_on:
