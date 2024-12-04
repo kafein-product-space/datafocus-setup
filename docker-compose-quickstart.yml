@@ -42,6 +42,8 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
       KC_HOSTNAME_STRICT: "false"
       KC_HEALTH_ENABLED: "true"
+#      KC_HOSTNAME: dfsetup.netfein.com #UNCOMMENT IF HTTPS
+#      KC_PROXY: edge #UNCOMMENT IF HTTPS
     depends_on:
       - postgresql
     logging:
