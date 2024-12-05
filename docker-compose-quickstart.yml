@@ -103,6 +103,8 @@ services:
     container_name: datafocus-backend
     image: kafein/datafocus-backend:1.2.0
     restart: always
+    volumes:
+      - ./logs:/app/logs
     environment:
       ACTIVE_PROFILE: ${ACTIVE_PROFILE:-production}
       DF_SERVER_PORT: ${DF_SERVER_PORT:-8082}
@@ -119,6 +121,7 @@ services:
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-admin}
       MINIO_SECRET_KEY: ${MINIO_ACCESS_KEY:-uguV3SLiUH}
+      DF_LOG_LEVEL: ${DF_LOG_LEVEL:-info}
     logging:
       driver: "json-file"
       options:
@@ -175,7 +178,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-uguV3SLiUH}
-      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-http://192.168.185.48/minio/}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-http://192.168.185.48/minio}
     command: server /data --console-address ":9001"
     networks:
       - datafocus-network
